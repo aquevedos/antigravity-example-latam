@@ -53,9 +53,6 @@ deployment_metadata.json
 # =============================================================================
 !assets/*.jpg
 !assets/*.png
-!practica-day/data/*.pdf
-!practica-day/data/*.md
-!practica-day/skills-no-code-gemini-enterprise/*.zip
 
 # =============================================================================
 # Sistema operativo e IDEs
