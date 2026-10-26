@@ -9,8 +9,9 @@ Repositorio oficial del taller práctico (**Práctica Day**) para diseñar, cons
 
 El taller aborda la eliminación de cuellos de botella en el proceso *Quote-to-Cash* (descuentos por volumen, pisos de margen bruto, plazos de crédito `Net 30/60/90` y matrices *DoA*) a través de **dos rutas complementarias**:
 
-1. **🛠️ Ruta Pro-Code (Nivel 200–300 — Cloud Architects & Platform Engineers):** Desarrollo guiado por especificaciones (*Spec-Driven Development*) con **Google Antigravity**, **Google ADK**, **`agents-cli`**, backend **FastAPI**, interfaz en **Streamlit** (con paleta oficial de **colores de Google Cloud en tonos pasteles**), **Terraform IaC**, despliegue en **Agent Runtime**, publicación en **Gemini Enterprise** y evaluación automatizada (*LLM-as-a-Judge*).
-2. **🧩 Ruta No-Code (Nivel 100–200 — Equipos de Negocio, Ventas, Finanzas y RR. HH.):** Creación e importación inmediata de **Skills sin código (`SKILL.md`)** y configuración visual en **Agent Designer** dentro de **Gemini Enterprise**.
+
+1 **🧩 Ruta No-Code (Nivel 100–200 — Equipos de Negocio, Ventas, Finanzas y RR. HH.):** Creación e importación inmediata de **Skills sin código (`SKILL.md`)** y configuración visual en **Agent Designer** dentro de **Gemini Enterprise**.
+2. **🛠️ Ruta Pro-Code (Nivel 200–300 — Cloud Architects & Platform Engineers):** Desarrollo guiado por especificaciones (*Spec-Driven Development*) con **Google Antigravity**, **Google ADK**, **`agents-cli`**, backend **FastAPI**, interfaz en **Streamlit** (con paleta oficial de **colores de Google Cloud en tonos pasteles**), **Terraform IaC**, despliegue en **Agent Runtime**, publicación en **Gemini Enterprise** y evaluación automatizada (*LLM-as-a-Judge*).
 
 ---
 
