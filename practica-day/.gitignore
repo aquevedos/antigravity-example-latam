@@ -1,0 +1,67 @@
+# =============================================================================
+# Respaldos locales pesados (superan el límite de 100 MB de GitHub)
+# =============================================================================
+/practicaday.zip
+
+# Mantener explícitamente los paquetes de ejemplo de Skills No-Code y datos PDF
+!skills-no-code-gemini-enterprise/*.zip
+!skills-no-code-gemini-enterprise/**/*.zip
+!data/*.pdf
+!data/*.md
+
+# =============================================================================
+# Variables de entorno, credenciales y secretos
+# =============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*.json
+*service-account*.json
+
+# =============================================================================
+# Python / uv / Entornos virtuales
+# =============================================================================
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+
+# =============================================================================
+# Terraform IaC (Estado y caché de proveedores)
+# =============================================================================
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+
+# =============================================================================
+# Artefactos generados durante la ejecución local del laboratorio ADK
+# =============================================================================
+artifacts/
+.adk/
+deployment_metadata.json
+
+# =============================================================================
+# Sistema operativo e IDEs
+# =============================================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
