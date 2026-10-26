@@ -1,0 +1,68 @@
+# =============================================================================
+# Bases de datos locales SQLite, variables de entorno y credenciales
+# =============================================================================
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*.json
+*service-account*.json
+
+# =============================================================================
+# Python / uv / Entornos virtuales
+# =============================================================================
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+
+# =============================================================================
+# Terraform IaC (Estado declarativo y caché de proveedores)
+# =============================================================================
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# =============================================================================
+# Artefactos generados al ejecutar el laboratorio localmente
+# =============================================================================
+cymbal-sales-ops-agent/
+cymbal-sales-ops-agent.bak.*/
+artifacts/
+.adk/
+deployment_metadata.json
+
+# =============================================================================
+# Recursos explícitamente permitidos en el repositorio
+# =============================================================================
+!assets/*.jpg
+!assets/*.png
+!practica-day/data/*.pdf
+!practica-day/data/*.md
+!practica-day/skills-no-code-gemini-enterprise/*.zip
+
+# =============================================================================
+# Sistema operativo e IDEs
+# =============================================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
