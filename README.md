@@ -102,14 +102,26 @@ flowchart LR
 
 ---
 
-## Módulo 0 (`setup`): Preparación del Entorno en 1 Línea
+## Módulo 0 (`setup`): Preparación del Entorno
 
 Instala y configura automáticamente `uv`, Python 3.11+, Node/`npx`, `gcloud`, `terraform`, `agents-cli`, `mcp` y `streamlit` (detecta si estás en **Google Cloud Shell**, Linux o macOS):
 
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/setup_agents_cli.sh)
-source ~/.bashrc  # o source ~/.zshrc en macOS
-```
+* **Opción 1 — Si ya estás dentro del repositorio clonado (Local o Cloud Shell):**
+  ```bash
+  export LAB_REPO="$(pwd)"
+  bash scripts/setup_agents_cli.sh
+  source ~/.bashrc  # o source ~/.zshrc en macOS
+  ```
+
+* **Opción 2 — Sin clonar en 1 línea vía `curl` (requiere repositorio `Public` en GitHub):**
+  ```bash
+  bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/setup_agents_cli.sh)
+  source ~/.bashrc  # o source ~/.zshrc en macOS
+  ```
+
+> [!IMPORTANT]
+> **¿Te apareció `curl: (22) The requested URL returned error: 404`?**
+> En GitHub, los enlaces `raw.githubusercontent.com/...` devuelven **`404`** mientras el repositorio esté configurado como **`Private`**. Si ya tienes la carpeta localmente usa la **Opción 1** (`bash scripts/setup_agents_cli.sh`), o cambia la visibilidad del repositorio a **`Public`** en GitHub (**Settings** $\rightarrow$ **General** $\rightarrow$ **Danger Zone** $\rightarrow$ **Change repository visibility** $\rightarrow$ **Change to Public**).
 
 ---
 
@@ -117,18 +129,19 @@ source ~/.bashrc  # o source ~/.zshrc en macOS
 
 Antes de crear código, todo agente empresarial parte de una especificación clara ([`spec.md`](./spec.md)): allí se definen las reglas de negocio (`CG-SOP-2026-V1`), el piso del `25.0%` de margen bruto, las integraciones MCP, los colores pasteles de Google Cloud y los escenarios de validación.
 
-*(En el siguiente módulo descargaremos este `spec.md` directamente dentro de la carpeta de tu proyecto).*
+*(En el siguiente módulo copiaremos este `spec.md` directamente dentro de la carpeta de tu proyecto).*
 
 ---
 
 ## Módulo 2 (`scaffold` + `.env`): Cimientos del Proyecto y Credenciales
 
-1. Crea la estructura oficial del proyecto **`cymbal-sales-ops-agent`** y descarga el plano `spec.md`:
+1. Crea la estructura oficial del proyecto **`cymbal-sales-ops-agent`** y copia el plano `spec.md` (detecta tu clon local automáticamente o descarga desde GitHub):
    ```bash
+   LAB_REPO="${LAB_REPO:-$(for d in "$PWD" "$HOME/cloudshell_open/antigravity-example-latam" "$HOME/codelabs-practica/antigravity-example-latam" "$HOME/antigravity-example-latam"; do [ -f "$d/spec.md" ] && echo "$d" && break; done)}"
    cd ~
    agents-cli scaffold create cymbal-sales-ops-agent --prototype --yes
    cd cymbal-sales-ops-agent
-   curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/spec.md -o spec.md
+   if [ -n "$LAB_REPO" ]; then cp "$LAB_REPO/spec.md" spec.md; else curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/spec.md -o spec.md; fi
    ```
 
 2. Configura las credenciales (`.env` y `app/.env`) eligiendo **una** opción:
@@ -148,16 +161,24 @@ Antes de crear código, todo agente empresarial parte de una especificación cla
 
 Puedes construir a **Vera** de dos maneras (ambas producen la misma arquitectura en `app/`):
 
-* **Ruta A — Con Google Antigravity (*Spec-Driven*):** Abre la carpeta `~/cymbal-sales-ops-agent` en Antigravity, instala opcionalmente la skill de arquitectura (`npx -y skills add https://github.com/aquevedos/antigravity-example-latam -y --all`) y escribe en el chat:
+* **Ruta A — Con Google Antigravity (*Spec-Driven*):** Abre la carpeta `~/cymbal-sales-ops-agent` en Antigravity (el paso `setup_agents_cli.sh` ya sincronizó la skill `cymbal-sales-ops-adk` en `~/.agents/skills/`) y escribe en el chat:
   > `Por favor implementa @spec.md`
 
-* **Ruta B — Rápida para Hands-On Lab (Copia directa desde `starter/`):** Descarga los módulos validados de Vera (`agent.py` sincroniza automáticamente `app/prompts/` y `app/skills/`):
+* **Ruta B — Rápida para Hands-On Lab (Copia directa desde `starter/`):** Instala los módulos validados de Vera (copia desde tu clon local `$LAB_REPO` o descarga desde GitHub si es público):
   ```bash
-  RAW_URL="https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/starter"
-  curl -fsSL "$RAW_URL/agent.py" -o app/agent.py
-  curl -fsSL "$RAW_URL/mcp_revops.py" -o app/mcp_revops.py
-  curl -fsSL "$RAW_URL/ui.py" -o app/ui.py
-  curl --create-dirs -fsSL "$RAW_URL/basic-dataset.json" -o tests/eval/datasets/basic-dataset.json
+  mkdir -p app/prompts app/skills tests/eval/datasets
+  if [ -n "$LAB_REPO" ] && [ -d "$LAB_REPO/starter" ]; then
+    cp "$LAB_REPO/starter/agent.py" "$LAB_REPO/starter/mcp_revops.py" "$LAB_REPO/starter/ui.py" app/
+    cp -r "$LAB_REPO/starter/prompts/." app/prompts/
+    cp -r "$LAB_REPO/starter/skills/." app/skills/
+    cp "$LAB_REPO/starter/basic-dataset.json" tests/eval/datasets/basic-dataset.json
+  else
+    RAW_URL="https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/starter"
+    curl -fsSL "$RAW_URL/agent.py" -o app/agent.py
+    curl -fsSL "$RAW_URL/mcp_revops.py" -o app/mcp_revops.py
+    curl -fsSL "$RAW_URL/ui.py" -o app/ui.py
+    curl --create-dirs -fsSL "$RAW_URL/basic-dataset.json" -o tests/eval/datasets/basic-dataset.json
+  fi
   ```
 
 ### 3.1 Instalar dependencias y probar Escenarios + Guardrails en Terminal
@@ -310,17 +331,23 @@ antigravity-example-latam/
 
 ¿Quieres correr automáticamente **todo el ciclo de punta a punta** (`setup` $\rightarrow$ `spec.md` $\rightarrow$ `scaffold` $\rightarrow$ `build` $\rightarrow$ `eval` $\rightarrow$ `observability` $\rightarrow$ `deploy` en Agent Runtime)?
 
-* **Ciclo Completo + Despliegue en Vertex AI Agent Runtime:**
+* **Ciclo Completo + Despliegue en Vertex AI Agent Runtime (desde el repo clonado):**
   ```bash
-  bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/run_full_lab.sh) --project "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" --region us-central1
+  bash scripts/run_full_lab.sh --project "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" --region us-central1
   ```
 
 * **Ciclo Completo Local (Genera Terraform IaC, omite el despliegue en la nube):**
   ```bash
-  bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/run_full_lab.sh) --project "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" --skip-deploy
+  bash scripts/run_full_lab.sh --project "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" --skip-deploy
   ```
 
 * **Con Clave de Google AI Studio (`GEMINI_API_KEY`):**
   ```bash
-  bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/run_full_lab.sh) --api-key "TU_CLAVE_DE_AI_STUDIO_AQUI"
+  bash scripts/run_full_lab.sh --api-key "TU_CLAVE_DE_AI_STUDIO_AQUI"
   ```
+
+* **Sin clonar (cuando el repositorio en GitHub está en modo `Public`):**
+  ```bash
+  bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/run_full_lab.sh) --project "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" --region us-central1
+  ```
+

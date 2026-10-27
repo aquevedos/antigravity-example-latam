@@ -51,11 +51,18 @@ def _sanitize_adk_braces(texto: str) -> str:
 def _ensure_markdown_assets() -> None:
     """Garantiza que los archivos Markdown de Prompt y ADK Skills existan en app/."""
     ts = int(time.time())
+    env_repo = os.environ.get("CYMBAL_LAB_REPO", "").strip()
     possible_local_starters = [
         _APP_DIR,
         _APP_DIR.parent / "starter",
         _APP_DIR.parent.parent / "antigravity-example-latam" / "starter",
+        _APP_DIR.parent.parent.parent / "antigravity-example-latam" / "starter",
+        Path.home() / "cloudshell_open" / "antigravity-example-latam" / "starter",
+        Path.home() / "codelabs-practica" / "antigravity-example-latam" / "starter",
+        Path.home() / "antigravity-example-latam" / "starter",
     ]
+    if env_repo:
+        possible_local_starters.insert(0, Path(env_repo) / "starter")
 
     for rel_path in _MARKDOWN_ASSETS:
         destino = _APP_DIR / rel_path

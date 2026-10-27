@@ -15,8 +15,10 @@
 #   7. Última versión de 'google-agents-cli' + soporte MCP + skill del taller
 #
 # Uso:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/setup_agents_cli.sh)
+#   # Opción 1 (Desde el repositorio clonado / Cloud Shell):
 #   bash scripts/setup_agents_cli.sh [--project PROJECT_ID] [--region global] [--api-key CLAVE] [--non-interactive]
+#   # Opción 2 (En 1 línea vía curl — requiere que el repositorio en GitHub sea Public):
+#   bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/setup_agents_cli.sh)
 # ==============================================================================
 
 set -euo pipefail
@@ -137,11 +139,71 @@ fi
 log_step "4. Instalando 'google-agents-cli' y Utilidad 'agents-cli-env'"
 
 SCRIPT_DIR_LOCAL="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"
+LOCAL_REPO_DIR=""
+for candidate in \
+  "${SCRIPT_DIR_LOCAL}/.." \
+  "$(pwd)" \
+  "${HOME}/cloudshell_open/antigravity-example-latam" \
+  "${HOME}/codelabs-practica/antigravity-example-latam" \
+  "${HOME}/antigravity-example-latam"; do
+  if [[ -n "${candidate}" && -f "${candidate}/scripts/agents-cli-env.sh" ]]; then
+    LOCAL_REPO_DIR="$(cd "${candidate}" && pwd)"
+    break
+  fi
+done
+
 if [[ -n "${SCRIPT_DIR_LOCAL}" && -f "${SCRIPT_DIR_LOCAL}/agents-cli-env.sh" ]]; then
   cp "${SCRIPT_DIR_LOCAL}/agents-cli-env.sh" "${HOME}/.local/bin/agents-cli-env"
-else
-  curl -fsSL "https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/agents-cli-env.sh?t=$(date +%s)" \
-    -o "${HOME}/.local/bin/agents-cli-env"
+elif [[ -n "${LOCAL_REPO_DIR}" && -f "${LOCAL_REPO_DIR}/scripts/agents-cli-env.sh" ]]; then
+  cp "${LOCAL_REPO_DIR}/scripts/agents-cli-env.sh" "${HOME}/.local/bin/agents-cli-env"
+elif ! curl -fsSL "https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/agents-cli-env.sh?t=$(date +%s)" \
+  -o "${HOME}/.local/bin/agents-cli-env" 2>/dev/null; then
+  cat << 'ENVEOF' > "${HOME}/.local/bin/agents-cli-env"
+#!/usr/bin/env bash
+set -euo pipefail
+FILES=()
+[[ -f ".env" ]]     && FILES+=(".env")
+[[ -f "app/.env" ]] && FILES+=("app/.env")
+if [[ ${#FILES[@]} -eq 0 ]]; then
+  if [[ -d "app" ]]; then FILES=(".env" "app/.env"); else FILES=(".env"); fi
+fi
+MODE="${1:-status}"
+case "${MODE}" in
+  aistudio)
+    KEY="${2:-${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}}"
+    [[ -z "${KEY}" ]] && { echo "Uso: agents-cli-env aistudio <TU_CLAVE_AI_STUDIO>"; exit 1; }
+    for TARGET_ENV in "${FILES[@]}"; do
+      touch "${TARGET_ENV}"
+      grep -v -E "^(GOOGLE_GENAI_USE_VERTEXAI|GEMINI_API_KEY|GOOGLE_API_KEY|GOOGLE_API_USE_CLIENT_CERTIFICATE)=" "${TARGET_ENV}" > "${TARGET_ENV}.tmp" || true
+      printf "GOOGLE_GENAI_USE_VERTEXAI=FALSE\nGEMINI_API_KEY=%s\nGOOGLE_API_KEY=%s\nGOOGLE_API_USE_CLIENT_CERTIFICATE=false\n" "${KEY}" "${KEY}" >> "${TARGET_ENV}.tmp"
+      mv "${TARGET_ENV}.tmp" "${TARGET_ENV}"
+      echo "✓ Configurado ${TARGET_ENV} para Google AI Studio (GOOGLE_GENAI_USE_VERTEXAI=FALSE)."
+    done
+    ;;
+  vertex)
+    PROJ="${2:-${GOOGLE_CLOUD_PROJECT:-${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || true)}}}"
+    LOC="${3:-global}"
+    [[ -z "${PROJ}" || "${PROJ}" == "(unset)" ]] && { echo "Uso: agents-cli-env vertex <PROJECT_ID> [REGION]"; exit 1; }
+    CLOUDSDK_CORE_DISABLE_PROMPTS=1 gcloud config set project "${PROJ}" --quiet >/dev/null 2>&1 || true
+    ADC_FILE_CHECK="${CLOUDSDK_CONFIG:-${HOME}/.config/gcloud}/application_default_credentials.json"
+    if [[ ! -f "${ADC_FILE_CHECK}" ]] || ! CLOUDSDK_CORE_DISABLE_PROMPTS=1 gcloud auth application-default print-access-token >/dev/null 2>&1; then
+      gcloud auth application-default login </dev/tty
+    fi
+    CLOUDSDK_CORE_DISABLE_PROMPTS=1 gcloud auth application-default set-quota-project "${PROJ}" --quiet >/dev/null 2>&1 || true
+    CLOUDSDK_CORE_DISABLE_PROMPTS=1 gcloud services enable serviceusage.googleapis.com cloudresourcemanager.googleapis.com aiplatform.googleapis.com generativelanguage.googleapis.com cloudbuild.googleapis.com run.googleapis.com cloudtrace.googleapis.com artifactregistry.googleapis.com iam.googleapis.com iamcredentials.googleapis.com storage.googleapis.com logging.googleapis.com monitoring.googleapis.com secretmanager.googleapis.com --project="${PROJ}" --quiet >/dev/null 2>&1 || true
+    for TARGET_ENV in "${FILES[@]}"; do
+      touch "${TARGET_ENV}"
+      grep -v -E "^(GOOGLE_CLOUD_PROJECT|GOOGLE_CLOUD_LOCATION|GOOGLE_GENAI_USE_VERTEXAI|GOOGLE_API_USE_CLIENT_CERTIFICATE)=" "${TARGET_ENV}" > "${TARGET_ENV}.tmp" || true
+      printf "GOOGLE_GENAI_USE_VERTEXAI=TRUE\nGOOGLE_CLOUD_PROJECT=%s\nGOOGLE_CLOUD_LOCATION=%s\nGOOGLE_API_USE_CLIENT_CERTIFICATE=false\n" "${PROJ}" "${LOC}" >> "${TARGET_ENV}.tmp"
+      mv "${TARGET_ENV}.tmp" "${TARGET_ENV}"
+      echo "✓ Configurado ${TARGET_ENV} para Vertex AI (PROJECT=${PROJ}, LOCATION=${LOC})."
+    done
+    ;;
+  *)
+    echo "Uso: agents-cli-env vertex <PROJECT_ID> [REGION] | agents-cli-env aistudio <CLAVE_AI_STUDIO>"
+    ;;
+esac
+ENVEOF
 fi
 chmod +x "${HOME}/.local/bin/agents-cli-env"
 log_ok "Helper 'agents-cli-env' instalado en ~/.local/bin/agents-cli-env."
@@ -181,9 +243,13 @@ fi
 # ==============================================================================
 log_step "6. Preconfigurando Soporte MCP (FastMCP) y Skill del Taller"
 
-if command -v npx >/dev/null 2>&1; then
+if [[ -n "${LOCAL_REPO_DIR}" && -d "${LOCAL_REPO_DIR}/skills/cymbal-sales-ops-adk" ]]; then
+  mkdir -p "${HOME}/.agents/skills"
+  cp -r "${LOCAL_REPO_DIR}/skills/cymbal-sales-ops-adk" "${HOME}/.agents/skills/"
+  log_ok "Skill 'cymbal-sales-ops-adk' sincronizada localmente en ~/.agents/skills/."
+elif command -v npx >/dev/null 2>&1; then
   npx -y skills add https://github.com/aquevedos/antigravity-example-latam -y --all -g >/dev/null 2>&1 || true
-  log_ok "Skill 'cymbal-sales-ops-adk' sincronizada para tu Coding Agent."
+  log_ok "Skill 'cymbal-sales-ops-adk' verificada para tu Coding Agent."
 fi
 
 python3 - << 'PYEOF' 2>/dev/null || true

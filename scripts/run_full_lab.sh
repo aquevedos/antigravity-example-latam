@@ -74,9 +74,18 @@ export GOOGLE_API_USE_CLIENT_CERTIFICATE="false"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"
 LOCAL_REPO_ROOT=""
-if [[ -n "${SCRIPT_DIR}" && -d "${SCRIPT_DIR}/../starter" ]]; then
-  LOCAL_REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-fi
+for candidate in \
+  "${SCRIPT_DIR}/.." \
+  "$(pwd)" \
+  "${CYMBAL_LAB_REPO:-}" \
+  "${HOME}/cloudshell_open/antigravity-example-latam" \
+  "${HOME}/codelabs-practica/antigravity-example-latam" \
+  "${HOME}/antigravity-example-latam"; do
+  if [[ -n "${candidate}" && -d "${candidate}/starter" && -f "${candidate}/spec.md" ]]; then
+    LOCAL_REPO_ROOT="$(cd "${candidate}" && pwd)"
+    break
+  fi
+done
 
 REPO_RAW_ROOT="https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main"
 TS="$(date +%s)"
