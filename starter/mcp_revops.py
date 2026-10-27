@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Servidor MCP de Operaciones Comerciales (RevOps) de Cymbal Group (SQLite)."""
 
+import os
 from pathlib import Path
 import sqlite3
+import tempfile
 
 try:
     from mcp.server.fastmcp import FastMCP
@@ -14,7 +16,13 @@ except ModuleNotFoundError:
 
 mcp = FastMCP("cymbal-revops-mcp")
 
-DB_PATH = Path(__file__).parent / "revops_cymbal.db"
+_DEFAULT_DB = Path(__file__).resolve().parent / "revops_cymbal.db"
+if os.access(_DEFAULT_DB.parent, os.W_OK) and (
+    not _DEFAULT_DB.exists() or os.access(_DEFAULT_DB, os.W_OK)
+):
+    DB_PATH = _DEFAULT_DB
+else:
+    DB_PATH = Path(tempfile.gettempdir()) / "revops_cymbal.db"
 
 
 def _init_db() -> sqlite3.Connection:

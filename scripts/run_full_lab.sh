@@ -272,7 +272,7 @@ fi
 # ==============================================================================
 log_step "Módulo 6 (Deploy & IaC): Generando Terraform IaC y Desplegando en Agent Runtime"
 
-agents-cli scaffold enhance --deployment-target agent_runtime --prefer-new --yes
+agents-cli scaffold enhance --deployment-target agent_runtime --region "${DEPLOY_REGION}" --prefer-new --yes
 if [[ -f "app/fast_api_app.py" ]] && ! grep -q "GOOGLE_API_USE_CLIENT_CERTIFICATE" "app/fast_api_app.py"; then
   sed -i 's/import os/import os\nos.environ.setdefault("GOOGLE_API_USE_CLIENT_CERTIFICATE", "false")/' "app/fast_api_app.py"
 fi
@@ -283,7 +283,7 @@ log_ok "Artefactos declarativos de Terraform IaC preparados en deployment/terraf
 
 if [[ "${SKIP_DEPLOY}" == "false" && -n "${TARGET_PROJECT}" ]]; then
   DEPLOY_LOG="$(mktemp)"
-  UV_NO_CONFIG=1 agents-cli deploy --project "${TARGET_PROJECT}" --region "${DEPLOY_REGION}" 2>&1 | tee "${DEPLOY_LOG}"
+  UV_NO_CONFIG=1 agents-cli deploy --project "${TARGET_PROJECT}" --region "${DEPLOY_REGION}" --no-confirm-project 2>&1 | tee "${DEPLOY_LOG}"
   log_ok "Despliegue en Vertex AI Agent Runtime completado."
 
   DEPLOYED_RE_PATH="$(grep -oE 'projects/[0-9]+/locations/[^[:space:]/"]+/reasoningEngines/[0-9]+' "${DEPLOY_LOG}" | tail -n 1 || true)"

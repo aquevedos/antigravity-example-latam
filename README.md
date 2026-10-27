@@ -147,8 +147,9 @@ Antes de crear código, todo agente empresarial parte de una especificación cla
 2. Configura las credenciales (`.env` y `app/.env`) eligiendo **una** opción:
    * **Opción A — Google Cloud / Vertex AI (Recomendada en Cloud Shell y Empresas):**
      ```bash
-     # Detecta automáticamente tu proyecto ($DEVSHELL_PROJECT_ID) y habilita las APIs necesarias
-     agents-cli-env vertex "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" global
+     # Detecta tu proyecto tanto en Cloud Shell ($DEVSHELL_PROJECT_ID) como en terminal local (gcloud config)
+     export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}}"
+     agents-cli-env vertex "$GOOGLE_CLOUD_PROJECT" global
      ```
    * **Opción B — Google AI Studio (`GEMINI_API_KEY`):**
      ```bash
@@ -248,26 +249,30 @@ Todo proyecto generado con `agents-cli` incluye instrumentación nativa **OpenTe
 
 ## Módulo 6 (`deploy`): Infraestructura Declarativa (`Terraform IaC`) y `Agent Runtime`
 
-1. Genera los artefactos declarativos de **Terraform IaC** (`deployment/terraform/`) y prepara el `uv.lock` limpio contra PyPI público:
+1. Define tu proyecto activo (funciona tanto en **Cloud Shell** como en **terminal local** vía `gcloud config`), genera los artefactos declarativos de **Terraform IaC** (`deployment/terraform/`) y prepara el `uv.lock` limpio contra PyPI público:
    ```bash
-   agents-cli scaffold enhance --deployment-target agent_runtime --prefer-new --yes
+   export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}}"
+   echo "☁️ Proyecto activo: $GOOGLE_CLOUD_PROJECT"
+
+   agents-cli scaffold enhance --deployment-target agent_runtime --region us-central1 --prefer-new --yes
    rm -f uv.lock && uv add --no-config "mcp>=1.8.0,<2.0.0" "streamlit>=1.40.0" && uv lock --no-config
    ```
 
 2. *(Opcional — Gobernanza Empresarial con Terraform)* Si deseas aprovisionar primero la infraestructura completa de telemetría (Service Account con privilegio mínimo IAM, bucket GCS de auditoría y tablas BigQuery), ejecuta `agents-cli infra single-project --apply --project "$GOOGLE_CLOUD_PROJECT"` antes del deploy.
 
-3. Despliega a **Vera** en **Vertex AI Agent Runtime**:
+3. Valida permisos (`--dry-run`) y despliega a **Vera** en **Vertex AI Agent Runtime**:
    ```bash
-   export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}"
-   UV_NO_CONFIG=1 agents-cli deploy --project "$GOOGLE_CLOUD_PROJECT" --region us-central1
+   export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}}"
+   UV_NO_CONFIG=1 agents-cli deploy --project "$GOOGLE_CLOUD_PROJECT" --region us-central1 --no-confirm-project
    ```
 
-4. Prueba el endpoint administrado en la nube (reemplaza la URL por la mostrada al terminar el comando anterior):
+4. Prueba el endpoint administrado en la nube (lee automáticamente el ID desplegado desde `deployment_metadata.json`):
    ```bash
+   ENGINE_ID=$(python3 -c "import json; print(json.load(open('deployment_metadata.json'))['remote_agent_runtime_id'])")
    agents-cli run \
-     --url "https://us-central1-aiplatform.googleapis.com/reasoningEngines/v1/projects/TU_PROJECT_NUM/locations/us-central1/reasoningEngines/TU_ENGINE_ID/api" \
+     --url "https://us-central1-aiplatform.googleapis.com/reasoningEngines/v1/${ENGINE_ID}/api" \
      --mode adk \
-     "Un cliente Enterprise en EMEA solicita 14% de descuento en 18,000 licencias de CLD-ENT-SUITE. ¿Puedo aprobarlo sin escalar?"
+     "Consulta en SQLite el catálogo Cloud (CLD-ENT-SUITE) y el perfil de Nordic FinTech Group en EMEA. Solicitan 14% de descuento en 18,000 licencias anuales con pago Net 30. ¿Puedo aprobarlo sin escalar?"
    ```
 
 ---
@@ -276,6 +281,7 @@ Todo proyecto generado con `agents-cli` incluye instrumentación nativa **OpenTe
 
 1. **Verificar auto-registro en Agent Registry:** Al desplegar en **Agent Runtime**, Google Cloud registra tu agente automáticamente en el catálogo de flota:
    ```bash
+   export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}}"
    gcloud agent-registry agents list --project "$GOOGLE_CLOUD_PROJECT" --location us-central1
    ```
 
@@ -333,12 +339,14 @@ antigravity-example-latam/
 
 * **Ciclo Completo + Despliegue en Vertex AI Agent Runtime (desde el repo clonado):**
   ```bash
-  bash scripts/run_full_lab.sh --project "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" --region us-central1
+  export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}}"
+  bash scripts/run_full_lab.sh --project "$GOOGLE_CLOUD_PROJECT" --region us-central1
   ```
 
 * **Ciclo Completo Local (Genera Terraform IaC, omite el despliegue en la nube):**
   ```bash
-  bash scripts/run_full_lab.sh --project "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" --skip-deploy
+  export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}}"
+  bash scripts/run_full_lab.sh --project "$GOOGLE_CLOUD_PROJECT" --skip-deploy
   ```
 
 * **Con Clave de Google AI Studio (`GEMINI_API_KEY`):**
@@ -348,6 +356,7 @@ antigravity-example-latam/
 
 * **Sin clonar (cuando el repositorio en GitHub está en modo `Public`):**
   ```bash
-  bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/run_full_lab.sh) --project "${GOOGLE_CLOUD_PROJECT:-$DEVSHELL_PROJECT_ID}" --region us-central1
+  export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}}"
+  bash <(curl -fsSL https://raw.githubusercontent.com/aquevedos/antigravity-example-latam/main/scripts/run_full_lab.sh) --project "$GOOGLE_CLOUD_PROJECT" --region us-central1
   ```
 
